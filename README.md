@@ -45,7 +45,7 @@ secret = Shamir.combine(loaded_shares[0..2])
 
 ## Limitations
 
-- **Maximum secret size:** 65 bytes
+- **Maximum secret size:** 275 bytes
 - **Maximum shares:** 255
 
 ## Contributing

@@ -1,8 +1,8 @@
 module Shamir
   module Math
     # A large prime number for finite field operations
-    # Using Mersenne prime 2^521 - 1 (supports secrets up to ~65 bytes)
-    PRIME = BigInt.new(2)**521 - 1
+    # Using Mersenne prime 2^2203 - 1 (supports secrets up to ~275 bytes)
+    PRIME = BigInt.new(2)**2203 - 1
 
     # Generate a random polynomial of given degree with secret as constant term
     # Returns array of coefficients [secret, a1, a2, ..., a_degree]

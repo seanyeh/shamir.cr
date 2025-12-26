@@ -3,7 +3,7 @@ require "./shamir/share"
 require "./shamir/math"
 
 module Shamir
-  VERSION = "0.1.0"
+  VERSION = "0.2.0"
 
   # Split a secret into n shares, requiring k shares to reconstruct
   #
@@ -31,9 +31,9 @@ module Shamir
 
     bytes = secret.is_a?(String) ? secret.to_slice : secret
 
-    # With 2^521 - 1 prime, max secret length is 65 bytes (256^65 < 2^521)
-    if bytes.size > 65
-      raise ArgumentError.new("secret too long (max 65 bytes, got #{bytes.size})")
+    # With 2^2203 - 1 prime, max secret length is 275 bytes (256^275 < 2^2203)
+    if bytes.size > 275
+      raise ArgumentError.new("secret too long (max 275 bytes, got #{bytes.size})")
     end
 
     secret_int = BigInt.new(bytes.hexstring, base: 16)
