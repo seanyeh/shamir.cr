@@ -37,20 +37,24 @@ describe Shamir do
     end
   end
 
-  describe Shamir::Math do
-    describe ".mod_inverse" do
-      it "calculates modular inverse correctly" do
-        result = Shamir::Math.mod_inverse(BigInt.new(3), BigInt.new(11))
-        ((result * 3) % 11).should eq(1)
+  describe Shamir::MathGF256 do
+    describe ".evaluate_polynomial" do
+      it "evaluates polynomial correctly in GF(256)" do
+        # In GF(256): f(x) = 5 + 2*x (degree 1 polynomial)
+        coefficients = [5_u8, 2_u8]
+        result = Shamir::MathGF256.evaluate_polynomial(coefficients, 3_u8)
+        # f(3) = 5 + 2*3 in GF(256) = 5 XOR (2 * 3)
+        expected = Shamir::GF256.add(5_u8, Shamir::GF256.multiply(2_u8, 3_u8))
+        result.should eq(expected)
       end
     end
 
-    describe ".evaluate_polynomial" do
-      it "evaluates polynomial correctly" do
-        coefficients = [BigInt.new(5), BigInt.new(2), BigInt.new(3)]
-        result = Shamir::Math.evaluate_polynomial(coefficients, 2_u8)
-        # f(2) = 5 + 2*2 + 3*2^2 = 5 + 4 + 12 = 21
-        result.should eq(21)
+    describe ".lagrange_interpolate" do
+      it "reconstructs constant polynomial (degree 0)" do
+        # If all y values are the same, polynomial is constant
+        points = [{1_u8, 42_u8}, {2_u8, 42_u8}, {3_u8, 42_u8}]
+        result = Shamir::MathGF256.lagrange_interpolate(points)
+        result.should eq(42_u8)
       end
     end
   end
@@ -58,21 +62,21 @@ describe Shamir do
   describe Shamir::Share do
     describe "#to_hex" do
       it "converts share to hex string with correct format" do
-        share = Shamir::Share.new(1_u8, BigInt.new(12345))
+        share = Shamir::Share.new(1_u8, Bytes[0x30, 0x39])
         hex = share.to_hex
         hex.should eq("01:3039")
       end
 
       it "pads x-coordinate to 2 digits" do
-        share = Shamir::Share.new(15_u8, BigInt.new(255))
+        share = Shamir::Share.new(15_u8, Bytes[0xff])
         hex = share.to_hex
         hex.should eq("0f:ff")
       end
 
-      it "handles large y values" do
-        share = Shamir::Share.new(1_u8, BigInt.new("123456789012345678901234567890"))
+      it "handles multiple bytes" do
+        share = Shamir::Share.new(1_u8, Bytes[0x12, 0x34, 0x56, 0x78])
         hex = share.to_hex
-        hex.should match(/^01:[0-9a-f]+$/)
+        hex.should eq("01:12345678")
       end
     end
 
@@ -81,14 +85,14 @@ describe Shamir do
         hex = "01:3039"
         share = Shamir::Share.from_hex(hex)
         share.x.should eq(1)
-        share.y.should eq(12345)
+        share.y.should eq(Bytes[0x30, 0x39])
       end
 
-      it "handles large values" do
-        hex = "0f:18ee90ff6c373e0ee4e3f0ad2"
+      it "handles single byte" do
+        hex = "0f:ff"
         share = Shamir::Share.from_hex(hex)
         share.x.should eq(15)
-        share.y.should eq(BigInt.new("123456789012345678901234567890"))
+        share.y.should eq(Bytes[0xff])
       end
 
       it "raises error on invalid format" do
@@ -98,7 +102,7 @@ describe Shamir do
       end
 
       it "round-trips correctly" do
-        original = Shamir::Share.new(42_u8, BigInt.new("999888777666555444333222111"))
+        original = Shamir::Share.new(42_u8, Bytes[0xde, 0xad, 0xbe, 0xef])
         hex = original.to_hex
         restored = Shamir::Share.from_hex(hex)
         restored.x.should eq(original.x)
